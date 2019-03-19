@@ -87,8 +87,8 @@ class TasksController extends Controller
         
         if (\Auth::id() === $task->user_id) {
             return view('tasks.show', [
-                'task' => $task,
-            ]);
+            'task' => $task,
+        ]);
         }
         
         return redirect('/');
@@ -155,8 +155,8 @@ class TasksController extends Controller
 
         if (\Auth::id() === $task->user_id) {
             $task->delete();
-        }
 
-        return back();
+        return redirect('/');
+        }
     }
 }
