@@ -20,15 +20,18 @@ class TasksController extends Controller
         $data = [];
         if (\Auth::check()) {
             $user = \Auth::user();
-            $tasks = $user->microposts()->orderBy('created_at', 'desc')->paginate(10);
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
             
             $data = [
                 'user' => $user,
                 'tasks' => $tasks,
                 ];
+                
+            return view('tasks.index', $data);
+        }        
+        else {
+            return view('welcome', $data);
         }
-        
-        return view('welcome', $data);
     }
 
     /**
@@ -58,14 +61,16 @@ class TasksController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
+            'status' => 'required|max:10',
             'content' => 'required|max:191',
         ]);
         
-        $request->user()->microposts()->create([
-           'content' => $request->content, 
-        ]);
-        
-        return back();
+            $request->user()->tasks()->create([
+                'status' => $request->status,
+                'content' => $request->content,
+            ]);
+
+        return redirect('/');
     }
 
     /**
@@ -80,9 +85,13 @@ class TasksController extends Controller
     {
         $task = Task::find($id);
         
-        return view('tasks.show', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.show', [
+                'task' => $task,
+            ]);
+        }
+        
+        return redirect('/');
     }
 
     /**
@@ -97,9 +106,14 @@ class TasksController extends Controller
     {
         $task = Task::find($id);
         
-        return view('tasks.edit', [
-            'task' => $task,
-        ]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.edit', [
+                'task' => $task,
+            ]);
+        }
+        
+        return redirect('/');
+        
     }
 
     /**
@@ -119,10 +133,11 @@ class TasksController extends Controller
         ]);
         
         $task = Task::find($id);
-        $task->status = $request->status;
-        $task->content = $request->content;
-        $task->save();
-        
+        if (\Auth::id() === $task->user_id) {
+            $task->status = $request->status;
+            $task->content = $request->content;
+            $task->save();
+        }
         return redirect('/');
     }
 
@@ -136,7 +151,7 @@ class TasksController extends Controller
     //deleteでtasks/idにアクセスされた場合の「削除処理」
     public function destroy($id)
     {
-        $task = \App\Micropost::find($id);
+        $task = Task::find($id);
 
         if (\Auth::id() === $task->user_id) {
             $task->delete();
